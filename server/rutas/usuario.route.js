@@ -3,13 +3,21 @@ const Usuario = require('../modelos/usuario.model');
 const bcrypt = require('bcrypt');
 const _ = require('underscore');
 
+const { verificaToken, verificaRole } = require('../middlewares/auth');
+
 const app = express();
 
-app.put('/usuario/:id', function (req, res) {
+app.put('/usuario/:id', [verificaToken, verificaRole], function (req, res) {
     let id = req.params.id;
     let body = _.pick(req.body, ['nombre', 'email', 'img', 'role', 'estado' ]);
 
-    Usuario.findByIdAndUpdate(id, body, { new: true, runValidators: true }, (err, usuarioDB) => {
+    let options = {
+        new: true,
+        runValidators: true,
+        context: 'query'
+    };
+
+    Usuario.findByIdAndUpdate(id, body, options, (err, usuarioDB) => {
         if (err) {
             res.status(400).json({
                 ok: false,
@@ -24,7 +32,7 @@ app.put('/usuario/:id', function (req, res) {
     });
 });
 
-app.post('/usuario', async function (req, res) {
+app.post('/usuario', [verificaToken, verificaRole], function (req, res) {
     let body = req.body;
     let usuario = new Usuario({
         nombre: body.nombre,
@@ -33,7 +41,7 @@ app.post('/usuario', async function (req, res) {
         role: body.role
     });
 
-    await usuario.save((err, usuarioDB) => {
+    usuario.save((err, usuarioDB) => {
         if (err) {
             res.status(400).json({
                 ok: false,
@@ -48,8 +56,8 @@ app.post('/usuario', async function (req, res) {
     });
 });
 
-app.get('/usuario', function(req, res) {
-    
+app.get('/usuario', verificaToken, function(req, res) {
+
     let desde = req.query.desde || 0;
     desde = Number (desde);
 
@@ -64,7 +72,7 @@ app.get('/usuario', function(req, res) {
             });
         } else {
 
-            Usuario.count({ estado: true }, (err, conteo) => {
+            Usuario.countDocuments({ estado: true }, (err, conteo) => {
                 if (err) {
                     res.status(400).json({
                         ok: false,
@@ -82,32 +90,8 @@ app.get('/usuario', function(req, res) {
     });
 });
 
-app.delete('/usuario/:id', function (req, res) {
-    
-    let id = req.params.id;
+app.delete('/usuario', [verificaToken, verificaRole], function(req, res) {
 
-    Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
-        if (err) {
-            res.status(400).json({
-                ok: false,
-                err
-            });
-        } else if (!usuarioBorrado){
-            res.json({
-                ok: false,
-                err: 'el usuario no se encuentra' 
-            });
-        } else {
-            res.json({
-                ok: true,
-                usuario: usuarioBorrado
-            });
-        }
-    });
-
-});
-
-app.delete('/usuario', function(req, res) {
     let id = req.query.id;
     let body = {estado: false};
     console.log(body);
@@ -130,6 +114,33 @@ app.delete('/usuario', function(req, res) {
             });
         }
     });
-})
+});
+
+//#region delete antiguo
+// app.delete('/usuario/:id', verificaToken, function (req, res) {
+    
+//     let id = req.params.id;
+
+//     Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
+//         if (err) {
+//             res.status(400).json({
+//                 ok: false,
+//                 err
+//             });
+//         } else if (!usuarioBorrado){
+//             res.json({
+//                 ok: false,
+//                 err: 'el usuario no se encuentra' 
+//             });
+//         } else {
+//             res.json({
+//                 ok: true,
+//                 usuario: usuarioBorrado
+//             });
+//         }
+//     });
+
+// });
+//#endregion delete antiguo
 
 module.exports = app;

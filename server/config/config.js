@@ -1,17 +1,23 @@
 // PUERTO
 process.env.PORT = process.env.PORT || 3000;
 // Entorno
-process.env.NODE_ENV = process.env.NODE_ENV || 'dev'
+process.env.NODE_ENV = process.env.NODE_ENV || 'dev';
 // Base de datos
 
-let urlBD;
+let urlDB;
 
 // Local
 if ( process.env.NODE_ENV === 'dev' ) {
-    urlBD = 'mongodb://localhost:27017/cafe';
+    urlDB = 'mongodb://localhost:27017/cafe';
 } else {
     // Servidor
-    urlBD = process.env.MONGO_URI;
+    urlDB = process.env.MONGO_URI;
 }
+process.env.URLDB = urlDB;
 
-process.env.URLBD = urlBD;
+
+// fecha de expiracion token
+// 60 segundos * 60 minutos * 24 horas * 30 dias
+process.env.CADUCIDAD_TOKEN = 60 * 60  * 24 * 30;
+// seed
+process.env.SEED = process.env.SEED || 'este-es-el-seed-desarrollo';
